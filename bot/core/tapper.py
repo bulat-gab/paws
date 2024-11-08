@@ -275,11 +275,11 @@ class Tapper:
 
     async def check_proxy(self, http_client: aiohttp.ClientSession, proxy: Proxy) -> None:
         try:
-            response = await http_client.get(url='https://httpbin.org/ip', timeout=aiohttp.ClientTimeout(5))
+            response = await http_client.get(url='https://httpbin.org/ip')
             ip = (await response.json()).get('origin')
             logger.info(f"Proxy IP: <cyan>{ip}</cyan>")
         except Exception as error:
-            logger.error(f"Proxy: {proxy} | Error: {error}")
+            logger.error(f"Proxy: <cyan>{proxy}</cyan> | Error: <ly>{error}</ly>")
 
     def check_timeout_error(self, error):
          try:
@@ -425,6 +425,7 @@ class Tapper:
             'invite',
             'emojiname',
             'linked',
+            'daily',
         ]
 
         if not self.wallet_connected and settings.ENABLE_CHECKER:
@@ -487,6 +488,7 @@ class Tapper:
         task_action = task.get('action', 'Unknown action')
         task_data = task.get('data', '')
         task_code = task.get('code', '')
+        available_until = task.get('availableUntil', '')
 
         if task_type == 'social' and task_action == 'link':
              if 't.me/' in task_data:
@@ -499,6 +501,9 @@ class Tapper:
                      self.error(f"Failed to subscribe to channel <cyan>{task_title}</cyan>")
                      return False
                  await asyncio.sleep(random.uniform(3, 5))
+
+        if task_code == 'daily' and int(time() * 1000) >= available_until:
+            return False
 
         for retry_count in range(settings.MAX_RETRIES):
             try:

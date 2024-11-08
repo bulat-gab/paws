@@ -189,4 +189,6 @@ templates.json
 
 wallet.json
 used_wallet.json
+statistics.json
+statistics.html
 

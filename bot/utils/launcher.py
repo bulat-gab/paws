@@ -7,20 +7,26 @@ from itertools import cycle
 from pyrogram import Client
 from better_proxy import Proxy
 
+from colorama import Fore, Back, Style, init
+
 from bot.config import settings
 from bot.utils import logger
 from bot.utils.wallets import generate_wallets, get_wallets
+from bot.utils.statistics_html import generate_statistics_html_page
 from bot.core.tapper import run_tapper
+from bot.core.statistics import run_statistics
 from bot.core.registrator import register_sessions
 
-start_text = """
+init(autoreset=True)
 
-🎨️Github - https://github.com/YarmolenkoD/paws
+start_text = f"""
+
+🎨️{Fore.CYAN + Style.BRIGHT}Github{Fore.RESET} - https://github.com/YarmolenkoD/paws
 
 My other bots:
 
-💩Boinkers - https://github.com/YarmolenkoD/boinkers
-🎨Notpixel - https://github.com/YarmolenkoD/notpixel
+💩{Fore.CYAN + Style.BRIGHT}Boinkers{Fore.RESET} - https://github.com/YarmolenkoD/boinkers
+🎨{Fore.CYAN + Style.BRIGHT}Notpixel{Fore.RESET} - https://github.com/YarmolenkoD/notpixel
 
 🚀 HIDDEN CODE MARKET 🚀
 
@@ -29,8 +35,9 @@ My other bots:
 
 Select an action:
 
-    1. Run script 🐾
-    2. Create a session 🐶
+    1. {Fore.CYAN + Style.BRIGHT}Run script{Fore.RESET} 🐾
+    2. {Fore.CYAN + Style.BRIGHT}Create a session{Fore.RESET} 🐶
+    3. {Fore.CYAN + Style.BRIGHT}Statistics{Fore.RESET} 📊
 
 """
 
@@ -85,7 +92,7 @@ async def process() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--action", type=int, help="Action to perform")
 
-    logger.info(f"Detected {len(get_session_names())} sessions | {len(get_proxies())} proxies")
+    logger.info(f"Detected <cyan>{len(get_session_names())}</cyan> sessions | <cyan>{len(get_proxies())}</cyan> proxies")
 
     action = parser.parse_args().action
 
@@ -95,15 +102,15 @@ async def process() -> None:
         while True:
             action = input("> ")
 
-            check_array = ["1", "2"]
+            check_array = ["1", "2", "3"]
 
             if settings.ENABLE_CHECKER:
-                check_array = ["1", "2", "3"]
+                check_array = ["1", "2", "3", "4"]
 
             if not action.isdigit():
                 logger.warning("Action must be number")
             elif action not in check_array:
-                logger.warning("Action must be 1 or 2")
+                logger.warning("Action must be 1, 2 or 3")
             else:
                 action = int(action)
                 break
@@ -116,7 +123,14 @@ async def process() -> None:
     elif action == 2:
         await register_sessions()
 
-    elif action == 3 and settings.ENABLE_CHECKER:
+    elif action == 3:
+        logger.info('Statistics generation has started... Please wait ⏰')
+        tg_clients = await get_tg_clients()
+        await statistics(tg_clients=tg_clients)
+        logger.success('Statistics successfully generated ✅')
+        await generate_statistics_html_page()
+
+    elif action == 4 and settings.ENABLE_CHECKER:
          while True:
              count = input("Input number of wallet you want to create: ")
              try:
@@ -144,6 +158,21 @@ async def run_tasks(tg_clients: list[Client]):
                 proxy=next(proxies_cycle) if proxies_cycle else None,
                 wallet=next(wallets_cycle) if wallets_cycle else None,
                 wallets=wallets
+            )
+        )
+        for tg_client in tg_clients
+    ]
+
+    await asyncio.gather(*tasks)
+
+async def statistics(tg_clients: list[Client]):
+    proxies = get_proxies()
+    proxies_cycle = cycle(proxies) if proxies else None
+    tasks = [
+        asyncio.create_task(
+            run_statistics(
+                tg_client=tg_client,
+                proxy=next(proxies_cycle) if proxies_cycle else None,
             )
         )
         for tg_client in tg_clients

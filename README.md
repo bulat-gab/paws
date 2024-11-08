@@ -105,6 +105,8 @@ You can also use arguments for quick start, for example:
 
 # 1 - Run script 🐾
 # 2 - Creates a session 🐶
+# 3 - Statistics 📊
+
 ```
 
 # Windows manual installation

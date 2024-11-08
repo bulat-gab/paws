@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     USE_RANDOM_DELAY_IN_RUN: bool = True
     RANDOM_DELAY_IN_RUN: list[int] = [5, 80]
+    RANDOM_DELAY_IN_RUN_STATISTICS: list[int] = [5, 20]
 
     SLEEP_TIME_IN_MINUTES: list[int] = [60 * 24, 60 * 24]
 

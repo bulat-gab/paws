@@ -105,6 +105,7 @@ python3 main.py
 
 # 1 - Run script 🐾
 # 2 - Creates a session 🐶
+# 3 - Statistics 📊
 
 ```
 
