@@ -4,6 +4,7 @@ import asyncio
 import argparse
 from itertools import cycle
 
+from bot.utils.proxy_utils_v2 import create_tg_client_proxy_pairs
 from pyrogram import Client
 from better_proxy import Proxy
 
@@ -52,17 +53,6 @@ def get_session_names() -> list[str]:
 
     return session_names
 
-
-def get_proxies() -> list[Proxy]:
-    if settings.USE_PROXY_FROM_FILE:
-        with open(file="bot/config/proxies.txt", encoding="utf-8-sig") as file:
-            proxies = [Proxy.from_str(proxy=row.strip()).as_url for row in file]
-    else:
-        proxies = []
-
-    return proxies
-
-
 async def get_tg_clients() -> list[Client]:
     global tg_clients
 
@@ -91,8 +81,6 @@ async def get_tg_clients() -> list[Client]:
 async def process() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--action", type=int, help="Action to perform")
-
-    logger.info(f"Detected <cyan>{len(get_session_names())}</cyan> sessions | <cyan>{len(get_proxies())}</cyan> proxies")
 
     action = parser.parse_args().action
 
@@ -142,9 +130,9 @@ async def process() -> None:
                  print("Invaild number, please re-enter...")
 
 async def run_tasks(tg_clients: list[Client]):
-    proxies = get_proxies()
+    client_proxy_list = create_tg_client_proxy_pairs(tg_clients)
+
     wallets = get_wallets()
-    proxies_cycle = cycle(proxies) if proxies else None
     wallets_cycle = cycle(wallets) if wallets else None
 
     if settings.ENABLE_CHECKER and len(wallets) < len(tg_clients):
@@ -154,28 +142,28 @@ async def run_tasks(tg_clients: list[Client]):
     tasks = [
         asyncio.create_task(
             run_tapper(
-                tg_client=tg_client,
-                proxy=next(proxies_cycle) if proxies_cycle else None,
+                tg_client=pair[0],
+                proxy=pair[1].as_url,
                 wallet=next(wallets_cycle) if wallets_cycle else None,
                 wallets=wallets
             )
         )
-        for tg_client in tg_clients
+        for pair in client_proxy_list
     ]
 
     await asyncio.gather(*tasks)
 
 async def statistics(tg_clients: list[Client]):
-    proxies = get_proxies()
-    proxies_cycle = cycle(proxies) if proxies else None
+    client_proxy_list = create_tg_client_proxy_pairs(tg_clients)
+
     tasks = [
         asyncio.create_task(
             run_statistics(
-                tg_client=tg_client,
-                proxy=next(proxies_cycle) if proxies_cycle else None,
+                tg_client=pair[0],
+                proxy=pair[1].as_url,
             )
         )
-        for tg_client in tg_clients
+        for pair in client_proxy_list
     ]
 
     await asyncio.gather(*tasks)
